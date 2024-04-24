@@ -128,7 +128,7 @@ class BadLabsApi {
   }
 
   getTimestamps = (): Promise<{ now: number; endAt: number }> => {
-    const uri = `${this.baseUrl}/api/timestamp`
+    const uri = `${this.baseUrl.replace('/cardano', '')}/timestamp`
 
     return new Promise(async (resolve, reject) => {
       try {
