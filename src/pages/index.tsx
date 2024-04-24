@@ -1,118 +1,132 @@
-import Image from "next/image";
-import { Inter } from "next/font/google";
+import { Fragment, useMemo, useState } from 'react'
+import { useWallet } from '@meshsdk/react'
+import { useAuth } from '@/contexts/AuthContext'
+import { firestore } from '@/utils/firebase'
+import formatTokenAmount from '@/functions/formatTokenAmount'
+import buildTxs from '@/functions/buildTxs'
+import Url from '@/components/Url'
+import Button from '@/components/Button'
+import ProgressBar from '@/components/ProgressBar'
+import ConnectWalletModal from '@/components/ConnectWalletModal'
+import { DECIMALS, DEV_WALLET_ADDRESS, MINT_WALLET_ADDRESS, TEAM_WALLET_ADDRESS } from '@/constants'
+import badLabsApi from '@/utils/badLabsApi'
 
-const inter = Inter({ subsets: ["latin"] });
+const Page = () => {
+  const { user } = useAuth()
+  const { wallet } = useWallet()
+  const [openConnectModal, setOpenConnectModal] = useState(false)
+  const [progress, setProgress] = useState({
+    msg: '',
+    loading: false,
+    done: false,
+    batch: {
+      current: 0,
+      max: 0,
+    },
+  })
 
-export default function Home() {
+  const total = useMemo(() => user?.tokens?.length || 0, [user?.tokens?.length])
+
+  const handleTradeIn = async () => {
+    if (!user?.tokens?.length) return alert('user has insufficient tokens for this action')
+
+    const { now } = await badLabsApi.getTimestamps()
+
+    const dbPayload: DbPayload = {
+      timestamp: now,
+      address: user.addresses.find(({ isScript }) => !isScript)?.address || '',
+      amount: total,
+      didBurn: false,
+      didMint: false,
+    }
+
+    if (!dbPayload.address) return alert('wallet does not have a change address')
+
+    const collection = firestore.collection('turtle-syndicate-swaps')
+    const { id: docId } = await collection.add(dbPayload)
+
+    setProgress((prev) => ({ ...prev, loading: true, msg: 'Batching TXs...' }))
+
+    await buildTxs(
+      wallet,
+      [
+        {
+          address: DEV_WALLET_ADDRESS,
+          tokenId: 'lovelace',
+          amount: formatTokenAmount.toChain(Math.max(user.tokens.length * 0.5, 1), DECIMALS['ADA']),
+        },
+        {
+          address: MINT_WALLET_ADDRESS,
+          tokenId: 'lovelace',
+          amount: formatTokenAmount.toChain(user.tokens.length * 2, DECIMALS['ADA']),
+        },
+        ...user.tokens.map((t) => ({
+          address: TEAM_WALLET_ADDRESS,
+          tokenId: t.tokenId,
+          amount: t.tokenAmount.onChain,
+        })),
+      ],
+      (msg, currentBatch, totalBatches) => {
+        setProgress((prev) => ({
+          ...prev,
+          msg,
+          batch: { current: currentBatch, max: totalBatches },
+        }))
+      }
+    )
+
+    await collection.doc(docId).update({
+      didBurn: true,
+    })
+
+    setProgress((prev) => ({ ...prev, loading: false, done: true }))
+  }
+
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div className='w-screen h-screen flex flex-col items-center justify-between'>
+      <header className='p-4 text-center'>
+        <h1 className='text-3xl'>Turtle Syndicate</h1>
+        <p>Trade-in your old Turtles for brand new &amp; upgraded Turtles!</p>
+      </header>
+
+      {!user ? (
+        <div>
+          <Button label='Connect' onClick={() => setOpenConnectModal(true)} />
+          <ConnectWalletModal isOpen={openConnectModal} onClose={() => setOpenConnectModal(false)} />
         </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
+      ) : (
+        <div className='text-center'>
+          <p>
+            Hello,
+            <br />
+            <span className='text-sm'>
+              <Url src={`https://pool.pm/${user.stakeKey}`} label={user.stakeKey} />
             </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
           </p>
-        </a>
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
+          <p>
+            You have {total} NFTs to trade-in {total ? '🥳' : '😔'}
+            <br />
+            <br />
+            <Button label='Trade In' disabled={!total || progress.loading || progress.done} onClick={handleTradeIn} />
+            {!progress.done && progress.batch.max ? (
+              <Fragment>
+                <br />
+                <br />
+                <ProgressBar label='TX Batches' max={progress.batch.max} current={progress.batch.current} />
+              </Fragment>
+            ) : null}
           </p>
-        </a>
+        </div>
+      )}
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+      <footer className='p-4 text-center'>
+        <h6 className='text-sm'>
+          Developed by <Url src='https://badfoxmc.com' label='BadFoxMC' />
+        </h6>
+      </footer>
+    </div>
+  )
 }
+
+export default Page
