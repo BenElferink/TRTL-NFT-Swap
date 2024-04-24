@@ -128,7 +128,7 @@ const Page = () => {
               </p>
 
               <div className='my-4'>
-                <Button label='Trade In' disabled={!total || progress.loading || progress.done} onClick={handleTradeIn} />
+                <Button label='Trade In' disabled={true || !total || progress.loading || progress.done} onClick={handleTradeIn} />
               </div>
             </Fragment>
           ) : null}
