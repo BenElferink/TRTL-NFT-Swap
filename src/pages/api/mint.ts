@@ -32,9 +32,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         const amountRemaining = amountToMint - (amountMinted || 0)
 
-        if (!amountRemaining) return res.status(400).end('User does not have mint amount')
         if (!didBurn) return res.status(400).end('User did not complete burn TX')
         if (didMint) return res.status(400).end('Already completed mint for this record')
+        if (!amountToMint || !amountRemaining) return res.status(400).end('User does not have mint amount')
 
         const docsToDelete: string[] = []
 
