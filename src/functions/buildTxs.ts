@@ -1,4 +1,4 @@
-import { AppWallet, BrowserWallet, Transaction, keepRelevant } from '@meshsdk/core'
+import { BrowserWallet, Transaction, keepRelevant } from '@meshsdk/core'
 import formatTokenAmount from './formatTokenAmount'
 import txConfirmation from './txConfirmation'
 import { DECIMALS, ONE_MILLION } from '@/constants'
