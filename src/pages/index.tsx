@@ -6,8 +6,10 @@ import { firestore } from '@/utils/firebase'
 import badLabsApi from '@/utils/badLabsApi'
 import formatTokenAmount from '@/functions/formatTokenAmount'
 import buildTxs from '@/functions/buildTxs'
+import { CheckBadgeIcon } from '@heroicons/react/24/solid'
 import Url from '@/components/Url'
 import Button from '@/components/Button'
+import Loader from '@/components/Loader'
 import ProgressBar from '@/components/ProgressBar'
 import ConnectWalletModal from '@/components/ConnectWalletModal'
 import { DECIMALS, DEV_WALLET_ADDRESS, MINT_WALLET_ADDRESS, TEAM_WALLET_ADDRESS } from '@/constants'
@@ -76,13 +78,11 @@ const Page = () => {
       }
     )
 
-    await collection.doc(docId).update({
-      didBurn: true,
-    })
+    await collection.doc(docId).update({ didBurn: true })
+
+    setProgress((prev) => ({ ...prev, msg: 'Your Turtles will be minted soon 😍', loading: false, done: true }))
 
     await axios.post('/mint', { docId })
-
-    setProgress((prev) => ({ ...prev, loading: false, done: true }))
   }
 
   return (
@@ -98,28 +98,32 @@ const Page = () => {
           <ConnectWalletModal isOpen={openConnectModal} onClose={() => setOpenConnectModal(false)} />
         </div>
       ) : (
-        <div className='text-center'>
-          <p>
-            Hello,
-            <br />
-            <span className='text-sm'>
-              <Url src={`https://pool.pm/${user.stakeKey}`} label={user.stakeKey} />
-            </span>
-          </p>
+        <div className='text-center flex flex-col items-center'>
+          {!progress.done && !progress.loading ? (
+            <Fragment>
+              <p>
+                Hello,
+                <br />
+                <span className='text-sm'>
+                  <Url src={`https://pool.pm/${user.stakeKey}`} label={user.stakeKey} />
+                </span>
+              </p>
 
-          <p>
-            You have {total} NFTs to trade-in {total ? '🥳' : '😔'}
-            <br />
-            <br />
-            <Button label='Trade In' disabled={!total || progress.loading || progress.done} onClick={handleTradeIn} />
-            {!progress.done && progress.batch.max ? (
-              <Fragment>
-                <br />
-                <br />
-                <ProgressBar label='TX Batches' max={progress.batch.max} current={progress.batch.current} />
-              </Fragment>
-            ) : null}
-          </p>
+              <p className='mb-4'>
+                You have {total} NFTs to trade-in {total ? '🥳' : '😔'}
+              </p>
+
+              <Button label='Trade In' disabled={!total || progress.loading || progress.done} onClick={handleTradeIn} />
+            </Fragment>
+          ) : null}
+
+          {progress.done ? (
+            <CheckBadgeIcon className='w-24 h-24 text-green-400' />
+          ) : !progress.done && progress.batch.max ? (
+            <ProgressBar label='TX Batches' max={progress.batch.max} current={progress.batch.current} />
+          ) : null}
+
+          {progress.loading ? <Loader withLabel label={progress.msg} /> : <span>{progress.msg}</span>}
         </div>
       )}
 
