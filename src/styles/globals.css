@@ -17,7 +17,7 @@ body {
   font-size: 16px;
   background-color: rgba(0, 0, 0, 1);
 
-  background-image: url('/media/Syndicate_Headquarters.png');
+  background-image: url('/media/bg.png');
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;
