@@ -83,7 +83,7 @@ const Page = () => {
 
       setProgress((prev) => ({ ...prev, msg: 'Your Turtles will be minted soon 😍', loading: false, done: true }))
 
-      await axios.post('/mint', { docId })
+      await axios.post('/api/mint', { docId })
     } catch (error: any) {
       const errMsg = error?.message || error?.toString() || ''
 
