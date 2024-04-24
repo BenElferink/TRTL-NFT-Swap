@@ -1,7 +1,9 @@
 import { Fragment, useMemo, useState } from 'react'
+import axios from 'axios'
 import { useWallet } from '@meshsdk/react'
 import { useAuth } from '@/contexts/AuthContext'
 import { firestore } from '@/utils/firebase'
+import badLabsApi from '@/utils/badLabsApi'
 import formatTokenAmount from '@/functions/formatTokenAmount'
 import buildTxs from '@/functions/buildTxs'
 import Url from '@/components/Url'
@@ -9,7 +11,6 @@ import Button from '@/components/Button'
 import ProgressBar from '@/components/ProgressBar'
 import ConnectWalletModal from '@/components/ConnectWalletModal'
 import { DECIMALS, DEV_WALLET_ADDRESS, MINT_WALLET_ADDRESS, TEAM_WALLET_ADDRESS } from '@/constants'
-import badLabsApi from '@/utils/badLabsApi'
 
 const Page = () => {
   const { user } = useAuth()
@@ -78,6 +79,8 @@ const Page = () => {
     await collection.doc(docId).update({
       didBurn: true,
     })
+
+    await axios.post('/mint', { docId })
 
     setProgress((prev) => ({ ...prev, loading: false, done: true }))
   }
