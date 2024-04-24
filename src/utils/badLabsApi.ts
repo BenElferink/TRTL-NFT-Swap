@@ -118,10 +118,12 @@ class BadLabsApi {
   }
 
   private handleError = async (error: any, reject: (reason: string) => void, retry: () => Promise<any>): Promise<any> => {
-    console.error(error)
-
     if ([400, 404, 500, 504].includes(error?.response?.status)) {
-      return reject(error?.response?.data || error?.message || 'UNKNOWN ERROR')
+      const msg = error?.response?.data || error?.message || 'UNKNOWN ERROR'
+
+      console.log(msg)
+
+      return reject(msg)
     } else {
       return await retry()
     }
