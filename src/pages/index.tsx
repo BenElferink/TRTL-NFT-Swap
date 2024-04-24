@@ -48,41 +48,53 @@ const Page = () => {
     const collection = firestore.collection('turtle-syndicate-swaps')
     const { id: docId } = await collection.add(dbPayload)
 
-    setProgress((prev) => ({ ...prev, loading: true, msg: 'Batching TXs...' }))
+    try {
+      setProgress((prev) => ({ ...prev, loading: true, msg: 'Batching TXs...' }))
 
-    await buildTxs(
-      wallet,
-      [
-        {
-          address: DEV_WALLET_ADDRESS,
-          tokenId: 'lovelace',
-          amount: formatTokenAmount.toChain(Math.max(user.tokens.length * 0.5, 1), DECIMALS['ADA']),
-        },
-        {
-          address: MINT_WALLET_ADDRESS,
-          tokenId: 'lovelace',
-          amount: formatTokenAmount.toChain(user.tokens.length * 2, DECIMALS['ADA']),
-        },
-        ...user.tokens.map((t) => ({
-          address: TEAM_WALLET_ADDRESS,
-          tokenId: t.tokenId,
-          amount: t.tokenAmount.onChain,
-        })),
-      ],
-      (msg, currentBatch, totalBatches) => {
-        setProgress((prev) => ({
-          ...prev,
-          msg,
-          batch: { current: currentBatch, max: totalBatches },
-        }))
-      }
-    )
+      await buildTxs(
+        wallet,
+        [
+          {
+            address: DEV_WALLET_ADDRESS,
+            tokenId: 'lovelace',
+            amount: formatTokenAmount.toChain(Math.max(user.tokens.length * 0.5, 1), DECIMALS['ADA']),
+          },
+          {
+            address: MINT_WALLET_ADDRESS,
+            tokenId: 'lovelace',
+            amount: formatTokenAmount.toChain(user.tokens.length * 2, DECIMALS['ADA']),
+          },
+          ...user.tokens.map((t) => ({
+            address: TEAM_WALLET_ADDRESS,
+            tokenId: t.tokenId,
+            amount: t.tokenAmount.onChain,
+          })),
+        ],
+        (msg, currentBatch, totalBatches) => {
+          setProgress((prev) => ({
+            ...prev,
+            msg,
+            batch: { current: currentBatch, max: totalBatches },
+          }))
+        }
+      )
 
-    await collection.doc(docId).update({ didBurn: true })
+      await collection.doc(docId).update({ didBurn: true })
 
-    setProgress((prev) => ({ ...prev, msg: 'Your Turtles will be minted soon 😍', loading: false, done: true }))
+      setProgress((prev) => ({ ...prev, msg: 'Your Turtles will be minted soon 😍', loading: false, done: true }))
 
-    await axios.post('/mint', { docId })
+      await axios.post('/mint', { docId })
+    } catch (error: any) {
+      const errMsg = error?.message || error?.toString() || ''
+
+      setProgress((prev) => ({
+        ...prev,
+        msg: errMsg,
+        loading: false,
+        done: false,
+        batch: { current: 0, max: 0 },
+      }))
+    }
   }
 
   return (
@@ -109,11 +121,13 @@ const Page = () => {
                 </span>
               </p>
 
-              <p className='mb-4'>
+              <p>
                 You have {total} NFTs to trade-in {total ? '🥳' : '😔'}
               </p>
 
-              <Button label='Trade In' disabled={!total || progress.loading || progress.done} onClick={handleTradeIn} />
+              <div className='my-4'>
+                <Button label='Trade In' disabled={!total || progress.loading || progress.done} onClick={handleTradeIn} />
+              </div>
             </Fragment>
           ) : null}
 
