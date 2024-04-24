@@ -1,4 +1,4 @@
-import { AppWallet, BrowserWallet, Transaction } from '@meshsdk/core'
+import { AppWallet, BrowserWallet, Transaction, keepRelevant } from '@meshsdk/core'
 import formatTokenAmount from './formatTokenAmount'
 import txConfirmation from './txConfirmation'
 import { DECIMALS, ONE_MILLION } from '@/constants'
@@ -11,7 +11,7 @@ type Recipient = {
 }
 
 const buildTxs = async (
-  wallet: BrowserWallet | AppWallet,
+  wallet: BrowserWallet,
   recipients: Recipient[],
   callback: (msg: string, currentBatch: number, totalBatches: number) => void,
   difference?: number
@@ -30,7 +30,10 @@ const buildTxs = async (
     for await (const [idx, batch] of batches.entries()) {
       const tx = new Transaction({ initiator: wallet })
 
-      for (const { address, amount, tokenId } of batch) {
+      const inputs = keepRelevant(new Map(batch.map(({ tokenId, amount }) => [tokenId as string, amount.toString()])), await wallet.getUtxos())
+      tx.setTxInputs(inputs)
+
+      for (const { address, tokenId, amount } of batch) {
         if (tokenId === 'lovelace') {
           if (amount < ONE_MILLION) {
             const str1 = 'Cardano requires at least 1 ADA per TX.'
@@ -96,7 +99,9 @@ const buildTxs = async (
 
       const newDifference = (difference || 1) * (max / curr)
 
-      console.log(`Trying batch size: ${newDifference}`)
+      const m = `Trying batch size: ${newDifference}`
+      console.log(m)
+      callback(m, 0, 0)
 
       return await buildTxs(wallet, recipients, callback, newDifference)
     }
