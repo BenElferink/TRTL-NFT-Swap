@@ -17,7 +17,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     switch (method) {
       case 'GET': {
         const now = new Date().getTime()
-        const waitTime = 900000
 
         const collection = firestore.collection('turtle-syndicate-swaps')
         const { docs } = await collection.get()
@@ -27,8 +26,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           id: doc.id,
         })) as (DbPayload & { id: string })[]
 
-        const swapsThatNeedToMint = swaps.filter((doc) => !doc.didMint && doc.didBurn && now - doc.timestamp >= waitTime)
-        const swapsThatNeedToDelete = swaps.filter((doc) => !doc.didMint && !doc.didBurn && now - doc.timestamp >= waitTime)
+        const swapsThatNeedToMint = swaps.filter((doc) => !doc.didMint && doc.didBurn && now - doc.timestamp >= 300000) // 5 minutes
+        const swapsThatNeedToDelete = swaps.filter((doc) => !doc.didMint && !doc.didBurn && now - doc.timestamp >= 900000) // 15 minutes
 
         if (swapsThatNeedToMint.length) {
           console.warn(`found ${swapsThatNeedToMint.length} swaps that need to mint`)

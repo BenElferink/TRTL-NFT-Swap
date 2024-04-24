@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { AppWallet, BlockfrostProvider, ForgeScript, Mint, Transaction } from '@meshsdk/core'
-import { firestore } from '@/utils/firebase'
+import { firebase, firestore } from '@/utils/firebase'
 import badLabsApi from '@/utils/badLabsApi'
 import formatHex from '@/functions/formatHex'
 import { BLOCKFROST_API_KEY, MINT_WALLET_MNEMONIC, NEW_POLICY_ID } from '@/constants'
@@ -19,6 +19,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     switch (method) {
       case 'POST': {
         const { docId } = body
+        const { FieldValue } = firebase.firestore
 
         const assetCollection = firestore.collection('turtle-syndicate-assets')
         const assetDocs = await assetCollection.get()
@@ -27,26 +28,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         if (!swapDoc.exists) throw new Error('Doc ID is invalid')
 
-        const { address, amount, didBurn, didMint } = swapDoc.data() as DbPayload
+        const { address, amount: amountToMint, amountMinted, didBurn, didMint } = swapDoc.data() as DbPayload
 
-        if (!amount) throw new Error('User does not have mint amount')
+        const amountRemaining = amountToMint - (amountMinted || 0)
+
+        if (!amountRemaining) throw new Error('User does not have mint amount')
         if (!didBurn) throw new Error('User did not complete burn TX')
         if (didMint) throw new Error('Already completed mint for this record')
-
-        const _provider = new BlockfrostProvider(BLOCKFROST_API_KEY)
-        const _wallet = new AppWallet({
-          networkId: 1,
-          fetcher: _provider,
-          submitter: _provider,
-          key: {
-            type: 'mnemonic',
-            words: MINT_WALLET_MNEMONIC,
-          },
-        })
-
-        const _address = _wallet.getPaymentAddress()
-        const _script = ForgeScript.withOneSignature(_address)
-        const _tx = new Transaction({ initiator: _wallet })
 
         const docsToDelete: string[] = []
 
@@ -81,28 +69,47 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           return doc
         }
 
-        for (let i = 0; i < amount; i++) {
+        const mintItems: Mint[] = []
+
+        for (let i = 0; i < Math.min(amountRemaining, 10); i++) {
           const mintThis = await getNonMintedDoc()
 
-          const mintPayload: Mint = {
+          const payload: Mint = {
             ...mintThis,
             recipient: address,
           }
 
-          _tx.mintAsset(_script, mintPayload)
+          mintItems.push(payload)
         }
 
-        console.log(`minting: ${amount}`)
+        console.log(`minting ${mintItems.length}/${amountRemaining} items`)
+
+        const _provider = new BlockfrostProvider(BLOCKFROST_API_KEY)
+        const _wallet = new AppWallet({
+          networkId: 1,
+          fetcher: _provider,
+          submitter: _provider,
+          key: {
+            type: 'mnemonic',
+            words: MINT_WALLET_MNEMONIC,
+          },
+        })
+
+        const _address = _wallet.getPaymentAddress()
+        const _script = ForgeScript.withOneSignature(_address)
+        const _tx = new Transaction({ initiator: _wallet })
+
+        mintItems.forEach((item) => _tx.mintAsset(_script, item))
 
         const _unsigTx = await _tx.build()
         const _sigTx = await _wallet.signTx(_unsigTx)
         const _txHash = await _wallet.submitTx(_sigTx)
 
-        console.log(`minted: ${_txHash}`)
         console.log(`updating doc in DB: ${swapDoc.id}`)
 
         await swapCollection.doc(swapDoc.id).update({
-          didMint: true,
+          amountMinted: FieldValue.increment(mintItems.length),
+          didMint: (amountMinted || 0) + mintItems.length === amountToMint,
         })
 
         console.log(`updated doc in DB: ${swapDoc.id}`)
@@ -114,9 +121,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         console.log(`deleted batch (${docsToDelete.length}) from DB`)
 
-        return res.status(200).json({
-          txHash: _txHash,
-        })
+        return res.status(200).json({ txHash: _txHash })
       }
 
       default: {
