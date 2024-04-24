@@ -28,7 +28,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         })) as (DbPayload & { id: string })[]
 
         const swapsThatNeedToMint = swaps.filter((doc) => !doc.didMint && doc.didBurn && now - doc.timestamp >= waitTime)
-        // const swapsThatNeedToDelete = swaps.filter((doc) => !doc.didMint && !doc.didBurn && now - doc.timestamp >= waitTime)
+        const swapsThatNeedToDelete = swaps.filter((doc) => !doc.didMint && !doc.didBurn && now - doc.timestamp >= waitTime)
 
         if (swapsThatNeedToMint.length) {
           console.warn(`found ${swapsThatNeedToMint.length} swaps that need to mint`)
@@ -39,8 +39,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           }
         }
 
-        // if (swapsThatNeedToDelete.length) {
-        // }
+        if (swapsThatNeedToDelete.length) {
+          const b = firestore.batch()
+
+          swapsThatNeedToDelete.forEach(({ id }) => {
+            b.delete(collection.doc(id))
+          })
+
+          await b.commit()
+        }
 
         return res.status(204).end()
       }
