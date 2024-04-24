@@ -26,15 +26,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const swapCollection = firestore.collection('turtle-syndicate-swaps')
         const swapDoc = await swapCollection.doc(docId).get()
 
-        if (!swapDoc.exists) throw new Error('Doc ID is invalid')
+        if (!swapDoc.exists) return res.status(400).end('Doc ID is invalid')
 
         const { address, amount: amountToMint, amountMinted, didBurn, didMint } = swapDoc.data() as DbPayload
 
         const amountRemaining = amountToMint - (amountMinted || 0)
 
-        if (!amountRemaining) throw new Error('User does not have mint amount')
-        if (!didBurn) throw new Error('User did not complete burn TX')
-        if (didMint) throw new Error('Already completed mint for this record')
+        if (!amountRemaining) return res.status(400).end('User does not have mint amount')
+        if (!didBurn) return res.status(400).end('User did not complete burn TX')
+        if (didMint) return res.status(400).end('Already completed mint for this record')
 
         const docsToDelete: string[] = []
 
@@ -131,6 +131,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
   } catch (error) {
     console.error(error)
+
     return res.status(500).end()
   }
 }
