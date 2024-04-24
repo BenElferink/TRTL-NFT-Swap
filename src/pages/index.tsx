@@ -15,7 +15,7 @@ import ConnectWalletModal from '@/components/ConnectWalletModal'
 import { DECIMALS, DEV_WALLET_ADDRESS, MINT_WALLET_ADDRESS, TEAM_WALLET_ADDRESS } from '@/constants'
 
 const Page = () => {
-  const { user } = useAuth()
+  const { user, getAndSetUser } = useAuth()
   const { wallet } = useWallet()
   const [openConnectModal, setOpenConnectModal] = useState(false)
   const [progress, setProgress] = useState({
@@ -95,6 +95,8 @@ const Page = () => {
         batch: { current: 0, max: 0 },
       }))
     }
+
+    await getAndSetUser()
   }
 
   return (
