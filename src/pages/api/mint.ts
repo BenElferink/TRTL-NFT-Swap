@@ -43,7 +43,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           const doc = assetDocs.docs[idx]
           const docData = doc?.data() as Mint | undefined
 
-          if (!docData) return getRandomDoc()
+          if (!docData || !!docsToDelete.find((str) => str === doc.id)) return getRandomDoc()
 
           docsToDelete.push(doc.id)
 
