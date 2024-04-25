@@ -57,7 +57,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             const tokenId = `${NEW_POLICY_ID}${formatHex.toHex(doc.assetName)}`
             const foundToken = await badLabsApi.token.getData(tokenId)
 
-            if (!!foundToken) {
+            if (!!foundToken && !!foundToken.tokenAmount.onChain) {
               console.error(`Already minted this token: ${tokenId}`)
 
               return await getNonMintedDoc()

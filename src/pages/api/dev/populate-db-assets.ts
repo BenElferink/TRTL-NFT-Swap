@@ -111,7 +111,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             const tokenId = `${NEW_POLICY_ID}${formatHex.toHex(item.assetName)}`
             const foundToken = await badLabsApi.token.getData(tokenId)
 
-            isExist = !!foundToken
+            isExist = !!foundToken && !!foundToken.tokenAmount.onChain
           } catch (error) {
             // Token not found: THIS IS OK!
           }
