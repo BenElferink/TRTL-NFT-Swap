@@ -125,10 +125,12 @@ const Page = () => {
 
               <p>
                 You have {total} NFTs to trade-in {total ? '🥳' : '😔'}
+                <br />
+                We&apos;ll be online shortly!
               </p>
 
               <div className='my-4'>
-                <Button label='Trade In' disabled={!total || progress.loading || progress.done} onClick={handleTradeIn} />
+                <Button label='Trade In' disabled={true || !total || progress.loading || progress.done} onClick={handleTradeIn} />
               </div>
             </Fragment>
           ) : null}
