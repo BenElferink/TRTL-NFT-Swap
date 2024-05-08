@@ -21,7 +21,7 @@ const App = ({ Component, pageProps }: AppProps) => {
         <link rel='apple-touch-icon' sizes='180x180' href='/apple-touch-icon.png' />
         <link rel='manifest' href='/manifest.json' />
 
-        <title>Turtle Syndicate | NFT Swap</title>
+        <title>TRTL | NFT Swap</title>
       </Head>
 
       <Toaster />

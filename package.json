@@ -1,15 +1,15 @@
 {
-  "name": "turtle-syndicate-swap",
+  "name": "trtl-nft-swap",
   "version": "0.1.0",
   "private": true,
   "homepage": "/",
   "author": "Ben Elferink <ben.elferink@icloud.com> (https://github.com/BenElferink)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/BenElferink/turtle-syndicate-swap.git"
+    "url": "https://github.com/BenElferink/trtl-nft-swap.git"
   },
   "bugs": {
-    "url": "https://github.com/BenElferink/turtle-syndicate-swap/issues",
+    "url": "https://github.com/BenElferink/trtl-nft-swap/issues",
     "email": "ben.elferink@icloud.com"
   },
   "scripts": {
