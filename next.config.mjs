@@ -3,7 +3,13 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['labs.badfoxmc.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'labs.badfoxmc.com',
+        pathname: '**',
+      },
+    ],
   },
   webpack: function (config, options) {
     config.experiments = {
