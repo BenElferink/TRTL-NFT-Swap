@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import Image from 'next/image'
 import { Fragment, useMemo, useState } from 'react'
 import axios from 'axios'
 import { useWallet } from '@meshsdk/react'
@@ -144,9 +146,14 @@ const Page = () => {
       )}
 
       <footer className='p-4 text-center'>
-        <h6 className='text-sm'>
-          Developed by <Url src='https://badfoxmc.com' label='BadFoxMC' />
-        </h6>
+        <Link href='https://labs.badfoxmc.com' target='_blank' rel='noopener noreferrer' className='mb-4 flex items-center justify-center'>
+          <Image src='https://labs.badfoxmc.com/media/logo/badlabs.png' alt='logo' width={50} height={50} />
+          <h5 className='ml-2 text-sm text-start whitespace-nowrap'>
+            <span className='text-xs'>Powered by:</span>
+            <br />
+            Bad Labs
+          </h5>
+        </Link>
       </footer>
     </div>
   )

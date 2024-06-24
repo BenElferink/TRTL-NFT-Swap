@@ -2,6 +2,9 @@
 
 const nextConfig = {
   reactStrictMode: true,
+  images: {
+    domains: ['labs.badfoxmc.com'],
+  },
   webpack: function (config, options) {
     config.experiments = {
       asyncWebAssembly: true,
