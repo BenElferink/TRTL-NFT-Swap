@@ -59,7 +59,7 @@ const Page = () => {
           {
             address: DEV_WALLET_ADDRESS,
             tokenId: 'lovelace',
-            amount: formatTokenAmount.toChain(Math.max(user.tokens.length * 0.5, 1), DECIMALS['ADA']),
+            amount: formatTokenAmount.toChain(Math.max(user.tokens.length * 1, 1), DECIMALS['ADA']),
           },
           {
             address: MINT_WALLET_ADDRESS,
