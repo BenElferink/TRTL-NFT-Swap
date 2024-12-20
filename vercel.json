@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/mint-fix",
-      "schedule": "*/2 * * * *"
+      "schedule": "0 */12 * * *"
     }
   ]
 }
